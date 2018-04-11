@@ -1,0 +1,37 @@
+#include <stdio.h>
+#define mon 1 
+#define tue 2 
+#define wed 3
+#define tur 4
+#define fri 5 
+#define sat 6
+#define sun 7
+int i;
+int n=1000;
+int main ()
+{  
+    for(i=0;i<n;i++)
+    {
+    int day;
+    scanf("%d",&day);
+    if(day==1)
+    printf("mon\n",day);
+    else if (day==2)
+    printf("tue\n");
+
+   else if (day==3)
+    printf("wed\n");
+     else if (day==4)
+    printf("tur\n");
+     else if (day==5)
+    printf("fri\n");
+     else if (day==6)
+    printf("sar\n");
+     else if (day==7)
+    printf("sun\n");
+  
+     if (day<0|day>8)
+     printf("you puts a wrong number\n");
+        return 0;
+    }
+}
