@@ -1,0 +1,214 @@
+#include "stm32f0xx_it.h"
+//#include "main.h"
+
+extern uint8_t Res;
+extern uint16_t ASCII_RTU_Flag;	//µÚ0Î»ÓÃÓÚÅÐ¶ÏASCII/RTUÍ¨ÐÅ£¬0±íÊ¾ASCII£¬1±íÊ¾RTU£¬¹«ÓÃ£»
+																//µÚ1Î»ÓÃÓÚÅÐ¶ÏÊÇ·ñÐèÒªÆæÅ¼Ð£Ñé£¬0±íÊ¾²»ÐèÒª£¬1±íÊ¾ÐèÒª£¬¹«ÓÃ£»
+																//µÚ2Î»ÓÃÓÚÅÐ¶ÏÊÇ·ñ3A£¬0Î´ÊÕµ½£¬1ÒÑÊÕµ½¹ý£¬ASCIIÍ¨ÐÅ£»
+																//µÚ3Î»ÓÃÓÚÅÐ¶ÏÊÇ·ñÊÇµØÖ·¸ß×Ö½ÚÊý¾Ý£¬0±íÊ¾²»ÊÇ£¬1±íÊ¾ÊÇ£¬ASCIIÍ¨ÐÅ£»
+																//µÚ4Î»ÓÃÓÚÅÐ¶ÏÊÇ·ñÊÇµØÖ·µÍ×Ö½ÚÊý¾Ý£¬0±íÊ¾²»ÊÇ£¬1±íÊ¾ÊÇ£¬ASCIIÍ¨ÐÅ£»						
+																//µÚ5Î»ÓÃÓÚÅÐ¶ÏÊÇ·ñ0D£¬0Î´ÊÕµ½£¬1ÒÑÊÕµ½£¬ASCIIÍ¨ÐÅ£»
+																
+																
+																
+																//µÚ6Î»±íÊ¾1.5¸ö×Ö·û¶¨Ê±£¬0Î´³¬Ê±£¬1ÒÑ³¬Ê±£¬RTUÍ¨ÐÅ
+																//µÚ7Î»±íÊ¾3.5¸ö×Ö·û¶¨Ê±£¬0Î´³¬Ê±£¬1ÒÑ³¬Ê±£¬RTUÍ¨ÐÅ
+																
+																
+																//µÚ6Î»ÔÝÎ´ÓÃ
+																//µÚ7Î»ÔÝÎ´ÓÃ
+
+
+extern uint8_t MB_SCII_SlaveStation_Addr_High;   //´ÓÕ¾µØÖ·01µÄASCII¸ß×Ö½Ú0x30
+extern uint8_t MB_SCII_SlaveStation_Addr_Lower;  //´ÓÕ¾µØÖ·01µÄASCII¸ß×Ö½Ú0x31
+extern uint8_t Recvbuf[256];    								//¶¨ÒåÒ»¸öÊý×é£¬ÓÃÓÚ´æ·ÅÊý¾Ý
+extern uint8_t USART_RX_CNT;										//»º´æÊý¾Ý×Ö·û½øÐÐ¼ÆÊý 
+
+
+
+
+
+
+
+void USART2_IRQHandler(void)                	//´®¿Ú2 ÖÐ¶Ï·þÎñ³ÌÐò
+{
+//	uint8_t Res_data;
+	
+//	/* ·¢ËÍÖÐ¶Ï´¦Àí */
+//	if(USART_GetITStatus(USART2, USART_IT_TC) != RESET)  //ÊÇ·ñÊÇ·¢ËÍÖÐ¶Ï
+//	{
+//		Res =USART_ReceiveData(USART1);//(USART1->DR);	//¶ÁÈ¡½ÓÊÕµ½µÄÊý¾Ý
+//		
+//		if((USART_RX_STA&0x8000)==0)//½ÓÊÕÎ´Íê³É
+//		{
+//			if(USART_RX_STA&0x4000)//½ÓÊÕµ½ÁË0x0d
+//			{
+//				if(Res!=0x0a)USART_RX_STA=0;//½ÓÊÕ´íÎó,ÖØÐÂ¿ªÊ¼
+//				else USART_RX_STA|=0x8000;	//½ÓÊÕÍê³ÉÁË 
+//			}
+//			else //»¹Ã»ÊÕµ½0X0D
+//			{	
+//				if(Res==0x0d)USART_RX_STA|=0x4000;
+//				else
+//				{
+//					USART_RX_BUF[USART_RX_STA&0X3FFF]=Res ;
+//					USART_RX_STA++;
+//					if(USART_RX_STA>(USART_REC_LEN-1))USART_RX_STA=0;//½ÓÊÕÊý¾Ý´íÎó,ÖØÐÂ¿ªÊ¼½ÓÊÕ	  
+//				}		 
+//			}
+//		}
+//	}		
+//	
+	
+	
+	/* ½ÓÊÕÖÐ¶Ï´¦Àí */
+	
+	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) //ÊÇ·ñÊÇ½ÓÊÕÖÐ¶Ï
+	{
+
+			
+		Res =	USART_ReceiveData(USART2);										//´Ó(USART2->DR)ÖÐ¶ÁÈ¡½ÓÊÕµ½µÄÊý¾Ý
+	
+
+		if(ASCII_RTU_Flag && 0x01 != RESET)									//Îª1£¬ÊÇRTUÍ¨ÐÅ·½Ê½£»Îª0£¬ÊÇASCIIÍ¨ÐÅ·½Ê½
+		{
+		/* ÔÝÊ±Î´Ð´RTUÍ¨ÐÅ·½Ê½ */
+		
+		
+		
+		
+		}
+		else
+		{
+			/****** ASCII½ÓÊÕÍ¨ÐÅ ******/
+			
+			/* ÆæÅ¼Ð£Ñé´¦Àí */
+			if(ASCII_RTU_Flag && 0x02 != RESET)														//ÊÇ·ñÐèÒªÆæÅ¼Ð£Ñé£¬1±íÊ¾ÐèÒª£¬0±íÊ¾²»ÐèÒª
+			{
+				if(USART_GetFlagStatus(USART2, USART_FLAG_PE) != RESET)    //ÆæÅ¼Ð£Ñé³ö´í±êÖ¾£¬Îª1£¬±¾½ÓÊÕ×Ö½ÚÓÐ´í
+				{
+					ASCII_RTU_Flag &= 0x02;                                  	//±¨ÎÄ´íÎó,²»´¦Àí±¨ÎÄ£¬Çå³ý±êÖ¾Î»
+				}
+			}
+			
+			/* ÆðÊ¼×Ö·û3A´¦Àí */
+			if(ASCII_RTU_Flag && 0x04 != RESET)											//ÊÇ·ñÒÑ¾­ÊÕµ½¹ý3A
+			{
+				/* ÒÑÊÕµ½¹ý3A£¬ÔòÅÐÊÇ·ñÊÇµØÖ·¸ß×Ö½ÚÊý¾Ý */
+				if(ASCII_RTU_Flag && 0x08 != RESET)
+				{
+					/* Èç¹û¸ß×Ö½ÚµØÖ·ÕýÈ· */
+					if(Res == MB_SCII_SlaveStation_Addr_High)
+					{
+						ASCII_RTU_Flag &= 0xF7; 																//Çå¸ß×Ö½ÚÊý¾Ý±êÖ¾
+						ASCII_RTU_Flag |= 0x10; 																//ÖÃµÍ×Ö½ÚÊý¾Ý±êÖ¾
+						/* ´æÊý */
+						Recvbuf[USART_RX_CNT++]=Res;	
+					}
+					/* Èç¹û¸ß×Ö½ÚµØÖ·²»ÕýÈ· */
+					else
+					{
+						ASCII_RTU_Flag &= 0x02;                         		 //Çå±êÖ¾Î»
+					}
+				}
+				else
+				{
+					/* ÅÐ¶ÏÊÇ·ñÊÇµØÖ·µÍ×Ö½ÚÊý¾Ý */
+					if(ASCII_RTU_Flag && 0x10 != RESET)
+					{
+						if(Res == MB_SCII_SlaveStation_Addr_Lower)
+						{
+							ASCII_RTU_Flag &= 0xEF; 																//ÇåµÍ×Ö½ÚÊý¾Ý±êÖ¾									
+							/* ´æÊý */
+							Recvbuf[USART_RX_CNT++]=Res;
+						}
+						else
+						{
+							ASCII_RTU_Flag &= 0x02;                         		 //Çå±êÖ¾Î»
+						}												
+					}
+					else
+					{
+						/* ÒÑÊÕµ½µØÖ·µÍ×Ö½ÚÊý¾Ý£¬ÔòÅÐÊÇ·ñÒÑÊÕµ½¹ý0D */
+						
+						if(ASCII_RTU_Flag && 0x20 == RESET)
+						{
+						/* Î´ÊÕµ½¹ý0D£¬ÔòÅÐÊÇ·ñ±¾´ÎÊÕµ½µÄÊÇ0D */ 
+							if(Res == 0x0D)	
+							{
+								Recvbuf[USART_RX_CNT++]=Res;
+								ASCII_RTU_Flag |= 0x20;														//ÖÃÊÕµ½0D±êÖ¾			
+							}
+							else if(Res == 0x0A)
+							{
+								ASCII_RTU_Flag &= 0x02;												//±¨ÎÄ´íÎó,²»´¦Àí±¨ÎÄ£¬Çå³ý±êÖ¾Î»
+							}		
+							else
+							{
+								Recvbuf[USART_RX_CNT++]=Res;		
+							}					
+
+						}					
+						else
+						{
+							/* ÒÑÊÕµ½¹ý0D£¬ÔòÅÐÊÇ·ñ±¾´ÎÊÕµ½µÄÊÇ0A */
+							if(Res == 0x0A)	
+							{
+								Recvbuf[USART_RX_CNT++]=Res;
+
+								/* ÒÑÕýÈ·½ÓÊÕÍêÒ»Ö¡Êý¾Ý£¬¿ªÊ¼±¨ÎÄ´¦Àí LRC¡¢Ó¦ÓÃ²ã*/
+								
+								/////////////
+								
+								
+								
+								
+								
+								
+								/////////////
+
+								ASCII_RTU_Flag &= 0x02;								
+							}
+							else
+							{
+								ASCII_RTU_Flag &= 0x02;                           //±¨ÎÄ´íÎó,²»´¦Àí±¨ÎÄ£¬Çå³ý±êÖ¾Î»
+							}										
+						
+						}
+					}
+
+				}
+			}
+				/* »¹Î´ÊÕµ½¹ý3A */		
+			else
+			{
+				/* Èç¹ûÊÕµ½µÄ±¾×Ö½ÚÊÇ3A */		
+				if(Res == 0x3A)
+				{
+					Recvbuf[USART_RX_CNT++]=Res;
+					ASCII_RTU_Flag |= 0x04;												//ÖÃÊÕµ½3A±êÖ¾
+					ASCII_RTU_Flag |= 0x08;												//ÖÃµØÖ·¸ß×Ö½ÚÊý¾Ý±êÖ¾Î»
+				}			
+				/* Èç¹ûÊÕµ½µÄ±¾×Ö½Ú²»ÊÇ3A */		
+				else
+				{
+					ASCII_RTU_Flag &= 0x02;												//±¨ÎÄ´íÎó,²»´¦Àí±¨ÎÄ£¬Çå³ý±êÖ¾Î»
+				}
+			}
+			
+			
+			
+			
+				
+			
+			
+			
+			
+		}
+			
+////////////Çå½ÓÊÕÖÐ¶Ï±êÖ¾Î»
+     
+///////////		
+			
+			
+}
